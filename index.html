@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZOne 智慧營運入口</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <header class="bg-indigo-900 text-white p-4 sticky top-0 z-50">
+    <h1 id="pageTitle" class="text-xl font-bold">ZOne 營運系統</h1>
+    <p id="userName" class="text-xs opacity-70">辨識中...</p>
+  </header>
+
+  <main id="app" class="p-4">
+    <div id="loading" class="text-center py-20 text-gray-500">正在連接雲端資料庫...</div>
+    <div id="content" class="hidden space-y-4"></div>
+  </main>
+
+  <script>
+    const LIFF_ID = "2009972806-P4cPUWMS"; 
+    // 🔴 請填入你部署後的 GAS 網頁應用程式網址 (結尾是 /exec)
+    const GAS_URL = "這裡填入你的GAS網址"; 
+
+    async function initLiff() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+        if (!liff.isLoggedIn()) { liff.login(); return; }
+        const profile = await liff.getProfile();
+        document.getElementById('userName').innerText = `你好，${profile.displayName}`;
+        loadMenu();
+      } catch (err) { alert("LIFF 啟動失敗：" + err.message); }
+    }
+
+    function loadMenu() {
+      // 改用 fetch 透過 API 模式向 GAS 要資料
+      fetch(`${GAS_URL}?action=getMenu`)
+        .then(res => res.json())
+        .then(data => {
+          let html = "";
+          for (let cat in data) {
+            html += `<h3 class="font-bold text-indigo-900 mt-6 mb-2 border-l-4 border-indigo-500 pl-2">${cat}</h3>`;
+            data[cat].forEach(item => {
+              html += `
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-2">
+                  <h4 class="font-bold text-gray-800">${item.name}</h4>
+                  <div class="text-indigo-600 font-bold">$ ${item.price}</div>
+                </div>`;
+            });
+          }
+          document.getElementById('content').innerHTML = html;
+          document.getElementById('loading').classList.add('hidden');
+          document.getElementById('content').classList.remove('hidden');
+        })
+        .catch(err => alert("同步雲端失敗：" + err));
+    }
+
+    window.onload = initLiff;
+  </script>
+</body>
+</html>
