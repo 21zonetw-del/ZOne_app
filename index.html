@@ -33,27 +33,36 @@
       } catch (err) { alert("LIFF 啟動失敗：" + err.message); }
     }
 
-    function loadMenu() {
-      // 改用 fetch 透過 API 模式向 GAS 要資料
-      fetch(`${GAS_URL}?action=getMenu`)
-        .then(res => res.json())
-        .then(data => {
-          let html = "";
-          for (let cat in data) {
-            html += `<h3 class="font-bold text-indigo-900 mt-6 mb-2 border-l-4 border-indigo-500 pl-2">${cat}</h3>`;
-            data[cat].forEach(item => {
-              html += `
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-2">
-                  <h4 class="font-bold text-gray-800">${item.name}</h4>
-                  <div class="text-indigo-600 font-bold">$ ${item.price}</div>
-                </div>`;
-            });
-          }
-          document.getElementById('content').innerHTML = html;
-          document.getElementById('loading').classList.add('hidden');
-          document.getElementById('content').classList.remove('hidden');
-        })
-        .catch(err => alert("同步雲端失敗：" + err));
+   function loadMenu() {
+  const finalUrl = `${GAS_URL}?action=getMenu`;
+  console.log("嘗試連接 URL:", finalUrl);
+  
+  fetch(finalUrl)
+    .then(res => {
+      if (!res.ok) throw new Error("網路回應不正常：" + res.status);
+      return res.json();
+    })
+    .then(data => {
+      // ... 原本的處理邏輯 ...
+      let html = "";
+      for (let cat in data) {
+        html += `<h3 class="font-bold text-indigo-900 mt-6 mb-2 border-l-4 border-indigo-500 pl-2">${cat}</h3>`;
+        data[cat].forEach(item => {
+          html += `
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-2">
+              <h4 class="font-bold text-gray-800">${item.name}</h4>
+              <div class="text-indigo-600 font-bold">$ ${item.price}</div>
+            </div>`;
+        });
+      }
+      document.getElementById('content').innerHTML = html;
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('content').classList.remove('hidden');
+    })
+    .catch(err => {
+      // 這裡會顯示是 CORS 擋掉、還是 URL 寫錯
+      alert("同步失敗詳情：" + err.message + "\n請確認 GAS 部署權限是否設為『所有人』");
+    });
     }
 
     window.onload = initLiff;
