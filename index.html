@@ -11,45 +11,111 @@
     .hide-scrollbar::-webkit-scrollbar { display: none; }
   </style>
 </head>
-<body class="bg-slate-50 min-h-screen pb-32">
+<body class="bg-slate-50 min-h-screen">
 
-  <nav class="bg-white sticky top-0 z-40 shadow-sm border-b">
-    <div class="flex text-center">
-      <button onclick="switchBrand('ZOne')" id="tab-ZOne" class="flex-1 py-4 text-gray-400 transition-all active-tab text-sm tracking-widest">ZOne 酒館</button>
-      <button onclick="switchBrand('Huamao')" id="tab-Huamao" class="flex-1 py-4 text-gray-400 transition-all text-sm tracking-widest">火茂山丈 燒烤</button>
-    </div>
-  </nav>
-
-  <main class="p-4 max-w-md mx-auto">
-    <div id="loading" class="space-y-6">
-      <div class="h-6 bg-gray-200 rounded-md w-1/3 animate-pulse"></div>
-      <div class="h-24 bg-gray-200 rounded-[2rem] animate-pulse"></div>
-      <div class="h-24 bg-gray-200 rounded-[2rem] animate-pulse"></div>
-      <p class="text-center text-gray-400 text-sm">正在同步營運數據...</p>
-    </div>
-    <div id="menu-container" class="hidden space-y-10 pb-20"></div>
-  </main>
-
-  <footer class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t p-4 pb-8 z-50 shadow-2xl">
-    <div class="max-w-md mx-auto flex justify-between items-center px-2">
-      <div>
-        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">ESTIMATED TOTAL</p>
-        <p class="text-3xl font-black text-indigo-600">$ <span id="total-price">0</span></p>
+  <div id="view-menu" class="pb-32">
+    <nav class="bg-white sticky top-0 z-40 shadow-sm border-b">
+      <div class="flex text-center">
+        <button onclick="switchBrand('ZOne')" id="tab-ZOne" class="flex-1 py-4 text-gray-400 transition-all active-tab text-sm tracking-widest">ZOne 酒館</button>
+        <button onclick="switchBrand('Huamao')" id="tab-Huamao" class="flex-1 py-4 text-gray-400 transition-all text-sm tracking-widest">火茂山丈 燒烤</button>
       </div>
-      <button onclick="alert('下單功能開發中，目前預估：$' + document.getElementById('total-price').innerText)" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold shadow-xl shadow-indigo-100 active:scale-95 transition-all">
-        確認清單 (<span id="total-qty">0</span>)
-      </button>
-    </div>
-  </footer>
+    </nav>
 
-  <div id="modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center p-6 backdrop-blur-md" onclick="closeModal()">
-    <div class="bg-white rounded-[2.5rem] overflow-hidden max-w-sm w-full shadow-2xl animate-in fade-in zoom-in duration-300" onclick="event.stopPropagation()">
-      <div id="modal-img" class="h-72 bg-slate-100 bg-cover bg-center shadow-inner"></div>
-      <div class="p-8">
-        <h2 id="modal-name" class="text-2xl font-black text-gray-800"></h2>
-        <div class="h-1 w-12 bg-indigo-500 my-4 rounded-full"></div>
-        <p id="modal-desc" class="text-gray-500 leading-relaxed text-sm"></p>
-        <button onclick="closeModal()" class="mt-10 w-full bg-slate-50 py-4 rounded-2xl font-bold text-gray-400">關閉視窗</button>
+    <main class="p-4 max-w-md mx-auto">
+      <div id="loading" class="text-center py-20">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent mb-4"></div>
+        <p class="text-gray-400 animate-pulse font-bold tracking-widest">行動餐酒車正在路上...</p>
+      </div>
+      <div id="menu-container" class="hidden space-y-10"></div>
+    </main>
+
+    <footer class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t p-4 pb-8 z-50 shadow-2xl">
+      <div class="max-w-md mx-auto flex justify-between items-center px-2">
+        <div>
+          <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">ESTIMATED TOTAL</p>
+          <p class="text-3xl font-black text-indigo-600">$ <span id="total-price">0</span></p>
+        </div>
+        <button onclick="initCheckout()" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold shadow-xl shadow-indigo-100 active:scale-95 transition-all">
+          確認結帳 (<span id="total-qty">0</span>)
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <div id="view-checkout" class="hidden pb-10 bg-gray-50 min-h-screen">
+    <header class="bg-white p-4 sticky top-0 z-40 shadow-sm flex items-center gap-4">
+      <button onclick="backToMenu()" class="text-indigo-600 font-bold px-4 py-2 bg-indigo-50 rounded-xl">← 返回加點</button>
+      <h1 class="text-lg font-black text-gray-800">確認訂單</h1>
+    </header>
+
+    <main class="p-4 max-w-md mx-auto space-y-6">
+      
+      <section class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
+        <h3 class="font-black text-gray-800 mb-4">📍 取餐方式</h3>
+        <div class="flex gap-2">
+          <button id="btn-pickup" onclick="setDeliveryMode('pickup')" class="flex-1 py-3 rounded-xl font-bold border-2 border-indigo-600 bg-indigo-50 text-indigo-600 transition-all">現場自取</button>
+          <button id="btn-delivery" onclick="setDeliveryMode('delivery')" class="flex-1 py-3 rounded-xl font-bold border-2 border-gray-100 text-gray-400 transition-all">外送到府</button>
+        </div>
+      </section>
+
+      <section class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 space-y-4">
+        <h3 class="font-black text-gray-800">📝 聯絡資訊</h3>
+        <div>
+          <label class="text-xs font-bold text-gray-400 ml-2">姓名</label>
+          <input type="text" id="cust-name" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 mt-1" placeholder="怎麼稱呼您？">
+        </div>
+        <div>
+          <label class="text-xs font-bold text-gray-400 ml-2">電話</label>
+          <input type="tel" id="cust-phone" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 mt-1" placeholder="09XX-XXX-XXX">
+        </div>
+        <div id="address-field" class="hidden">
+          <label class="text-xs font-bold text-gray-400 ml-2">外送地址</label>
+          <input type="text" id="cust-address" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 mt-1" placeholder="請輸入完整地址">
+        </div>
+      </section>
+
+      <section class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
+        <h3 class="font-black text-gray-800 mb-4">💰 支付方式</h3>
+        <div class="space-y-2">
+          <div class="flex justify-between items-center bg-indigo-50 border border-indigo-200 p-4 rounded-2xl">
+            <span class="font-bold text-indigo-800">💵 現金結帳</span>
+            <div class="w-5 h-5 rounded-full bg-indigo-600 border-4 border-white shadow-sm"></div>
+          </div>
+          <div class="flex justify-between items-center bg-gray-50 border border-gray-100 p-4 rounded-2xl opacity-50">
+            <span class="font-bold text-gray-500">📱 LINE Pay (建置中)</span>
+            <div class="w-5 h-5 rounded-full bg-gray-200 border-2 border-white shadow-sm"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-slate-800 text-white p-6 rounded-[2rem] shadow-lg">
+        <div class="flex justify-between items-end mb-6">
+          <span class="font-bold text-slate-300">應付總額</span>
+          <span class="text-3xl font-black text-green-400">$ <span id="final-price">0</span></span>
+        </div>
+        <button onclick="submitOrder()" class="w-full bg-green-500 hover:bg-green-400 text-white font-black py-4 rounded-xl text-lg shadow-lg shadow-green-500/30 transition-all">
+          送出訂單
+        </button>
+      </section>
+    </main>
+  </div>
+
+  <div id="age-modal" class="fixed inset-0 bg-black z-[70] hidden flex items-center justify-center p-6" onclick="event.stopPropagation()">
+    <div class="bg-slate-900 border border-slate-700 rounded-[2rem] p-8 max-w-sm w-full shadow-2xl">
+      <div class="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+      </div>
+      <h2 class="text-2xl font-black text-white text-center mb-4">未滿 18 歲禁止飲酒</h2>
+      <p class="text-slate-400 text-sm leading-relaxed mb-6 text-justify">您即將結帳的清單包含 ZOne 酒精飲品。外送或取餐時，請務必出示<span class="text-white font-bold">實體身分證件</span>供人員核對。<br><br>若無法證明年滿 18 歲，我們將依法拒絕交貨且<span class="text-red-400 font-bold">不予退款</span>。</p>
+      
+      <label class="flex items-start gap-3 mb-8 cursor-pointer">
+        <input type="checkbox" id="age-check" class="mt-1 w-5 h-5 accent-red-500 rounded bg-slate-800 border-slate-600">
+        <span class="text-slate-300 text-sm font-bold">我已年滿 18 歲，並同意配合查核證件。</span>
+      </label>
+
+      <div class="flex gap-3">
+        <button onclick="document.getElementById('age-modal').classList.add('hidden')" class="flex-1 py-3 rounded-xl font-bold bg-slate-800 text-slate-400">返回修改</button>
+        <button onclick="confirmAge()" class="flex-1 py-3 rounded-xl font-bold bg-red-600 text-white shadow-lg shadow-red-600/20">同意並結帳</button>
       </div>
     </div>
   </div>
@@ -58,83 +124,51 @@
     const LIFF_ID = "2009972806-P4cPUWMS"; 
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzHWEQt8cjI8ne6pWPD3p-M35vzM5hLtvE-rSg3GfoOklXUxsNcOtwkVTuEdXyFhYeGvA/exec";
     const CACHE_KEY = "zone_menu_cache";
-    const CACHE_TIME_KEY = "zone_menu_cache_time";
 
     let rawMenuData = {};
     let allProducts = {};
     let currentBrand = "ZOne";
     let cart = {}; 
+    let deliveryMode = "pickup"; // 預設自取
 
     async function init() {
+      // 柔性 LIFF 登入：即使不在 LINE 裡面，網頁也不會壞掉
       try {
         await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) liff.login();
-        fetchMenu();
-      } catch (err) { console.error("LIFF 錯誤:", err); }
+        if (liff.isLoggedIn()) {
+          const profile = await liff.getProfile();
+          document.getElementById('cust-name').value = profile.displayName; // 自動填入暱稱
+        }
+      } catch (err) { console.log("非 LINE 環境瀏覽"); }
+      fetchMenu();
     }
 
+    // --- 載入與菜單邏輯 (維持快取極速版) ---
     function fetchMenu() {
-      const cachedData = localStorage.getItem(CACHE_KEY);
-      const lastFetch = localStorage.getItem(CACHE_TIME_KEY);
-      const now = new Date().getTime();
-
-      // 如果有快取，立即顯示
-      if (cachedData) {
-        console.log("快取命中，瞬間啟動介面...");
-        processData(JSON.parse(cachedData));
-        
-        // 如果快取超過 10 分鐘，背景偷偷更新
-        if (now - lastFetch > 600000) {
-          silentlyUpdate();
-        }
-      } else {
-        // 沒快取，走完整載入流程
-        performFullFetch();
-      }
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) { processData(JSON.parse(cached)); silentlyUpdate(); } 
+      else { performFullFetch(); }
     }
 
     function performFullFetch() {
       fetch(`${GAS_URL}?action=getMenu`)
         .then(res => res.json())
-        .then(data => {
-          saveToCache(data);
-          processData(data);
-        })
-        .catch(err => alert("初次連線失敗：" + err));
+        .then(data => { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); processData(data); });
     }
 
     function silentlyUpdate() {
-      console.log("背景同步數據中...");
       fetch(`${GAS_URL}?action=getMenu`)
         .then(res => res.json())
-        .then(data => {
-          saveToCache(data);
-          // 背景更新不強制重新渲染，避免客人操作時畫面跳動
-          // 但我們可以靜態更新 allProducts 索引
-          for(let b in data) {
-            for(let c in data[b]) {
-              data[b][c].forEach(p => { allProducts[p.id] = p; });
-            }
-          }
-        });
-    }
-
-    function saveToCache(data) {
-      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-      localStorage.setItem(CACHE_TIME_KEY, new Date().getTime());
+        .then(data => { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); });
     }
 
     function processData(data) {
       rawMenuData = data;
       allProducts = {};
-      for(let b in data) {
-        for(let c in data[b]) {
-          data[b][c].forEach(p => { allProducts[p.id] = p; });
-        }
-      }
+      for(let b in data) { for(let c in data[b]) { data[b][c].forEach(p => { allProducts[p.id] = p; }); } }
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('menu-container').classList.remove('hidden');
-      switchBrand(currentBrand);
+      switchBrand('ZOne');
     }
 
     function switchBrand(brand) {
@@ -148,19 +182,17 @@
       const container = document.getElementById('menu-container');
       const brandData = rawMenuData[currentBrand] || {};
       let html = "";
-
       for (let cat in brandData) {
-        html += `<section><div class="flex items-center gap-2 mb-5 px-2"><div class="h-5 w-1 bg-indigo-600 rounded-full"></div><h3 class="font-black text-lg text-slate-800 tracking-wider">${cat}</h3></div><div class="grid gap-4">`;
+        html += `<section><div class="flex items-center gap-2 mb-5 px-2"><div class="h-5 w-1 bg-indigo-600 rounded-full"></div><h3 class="font-black text-lg text-slate-800">${cat}</h3></div><div class="grid gap-4">`;
         brandData[cat].forEach(item => {
           const qty = cart[item.id] || 0;
           html += `
-            <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4">
-              <div onclick="showModal('${item.id}')" class="w-16 h-16 bg-slate-100 rounded-2xl flex-shrink-0 bg-cover bg-center border" style="background-image: url('${item.img || ''}')"></div>
-              <div class="flex-1" onclick="showModal('${item.id}')">
+            <div class="bg-white p-4 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4">
+              <div class="flex-1">
                 <h4 class="font-bold text-gray-800">${item.name}</h4>
                 <p class="text-indigo-600 font-black text-xl">$${item.price}</p>
               </div>
-              <div class="flex items-center bg-slate-100/50 rounded-2xl p-1 border border-slate-200">
+              <div class="flex items-center bg-slate-100/50 rounded-2xl p-1 border">
                 <button onclick="updateQty('${item.id}', -1)" class="w-10 h-10 font-bold text-gray-400">-</button>
                 <span id="qty-${item.id}" class="w-8 text-center font-black text-indigo-700">${qty}</span>
                 <button onclick="updateQty('${item.id}', 1)" class="w-10 h-10 font-bold text-indigo-600">+</button>
@@ -174,35 +206,81 @@
 
     function updateQty(id, delta) {
       cart[id] = (cart[id] || 0) + delta;
-      if (cart[id] < 0) cart[id] = 0;
+      if (cart[id] <= 0) delete cart[id];
       const qtySpan = document.getElementById(`qty-${id}`);
-      if (qtySpan) qtySpan.innerText = cart[id];
-      calculateTotal();
+      if (qtySpan) qtySpan.innerText = cart[id] || 0;
+      
+      let total = 0, count = 0;
+      for (let i in cart) { total += cart[i] * allProducts[i].price; count += cart[i]; }
+      document.getElementById('total-price').innerText = total;
+      document.getElementById('final-price').innerText = total;
+      document.getElementById('total-qty').innerText = count;
     }
 
-    function calculateTotal() {
-      let totalMoney = 0;
-      let totalCount = 0;
+    // --- 結帳防呆與切換邏輯 ---
+    function initCheckout() {
+      if (Object.keys(cart).length === 0) return alert("購物籃目前是空的喔！");
+      
+      // 檢查是否含有 ZOne (酒精) 產品
+      let hasAlcohol = false;
       for (let id in cart) {
-        if (allProducts[id]) {
-          totalMoney += cart[id] * allProducts[id].price;
-          totalCount += cart[id];
-        }
+        if (allProducts[id].owner === "ZOne") hasAlcohol = true;
       }
-      document.getElementById('total-price').innerText = totalMoney.toLocaleString();
-      document.getElementById('total-qty').innerText = totalCount;
+
+      if (hasAlcohol) {
+        document.getElementById('age-check').checked = false; // 每次打開都要重置
+        document.getElementById('age-modal').classList.remove('hidden');
+      } else {
+        proceedToCheckout();
+      }
     }
 
-    function showModal(id) {
-      const item = allProducts[id];
-      if (!item) return;
-      document.getElementById('modal-name').innerText = item.name;
-      document.getElementById('modal-desc').innerText = item.desc || "火茂山丈 X ZOne 職人嚴選，暫無詳細描述。";
-      document.getElementById('modal-img').style.backgroundImage = `url('${item.img || ''}')`;
-      document.getElementById('modal').classList.remove('hidden');
+    function confirmAge() {
+      if (!document.getElementById('age-check').checked) {
+        return alert("請勾選同意配合查核證件，否則無法為您備酒。");
+      }
+      document.getElementById('age-modal').classList.add('hidden');
+      proceedToCheckout();
     }
 
-    function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+    function proceedToCheckout() {
+      document.getElementById('view-menu').classList.add('hidden');
+      document.getElementById('view-checkout').classList.remove('hidden');
+      window.scrollTo(0, 0); // 捲動到頂部
+    }
+
+    function backToMenu() {
+      document.getElementById('view-checkout').classList.add('hidden');
+      document.getElementById('view-menu').classList.remove('hidden');
+    }
+
+    function setDeliveryMode(mode) {
+      deliveryMode = mode;
+      const btnPickup = document.getElementById('btn-pickup');
+      const btnDelivery = document.getElementById('btn-delivery');
+      const addressField = document.getElementById('address-field');
+
+      if (mode === 'pickup') {
+        btnPickup.className = "flex-1 py-3 rounded-xl font-bold border-2 border-indigo-600 bg-indigo-50 text-indigo-600 transition-all";
+        btnDelivery.className = "flex-1 py-3 rounded-xl font-bold border-2 border-gray-100 text-gray-400 transition-all";
+        addressField.classList.add('hidden');
+      } else {
+        btnDelivery.className = "flex-1 py-3 rounded-xl font-bold border-2 border-indigo-600 bg-indigo-50 text-indigo-600 transition-all";
+        btnPickup.className = "flex-1 py-3 rounded-xl font-bold border-2 border-gray-100 text-gray-400 transition-all";
+        addressField.classList.remove('hidden');
+      }
+    }
+
+    function submitOrder() {
+      const name = document.getElementById('cust-name').value;
+      const phone = document.getElementById('cust-phone').value;
+      const address = document.getElementById('cust-address').value;
+
+      if (!name || !phone) return alert("請填寫姓名與聯絡電話！");
+      if (deliveryMode === 'delivery' && !address) return alert("請填寫外送地址！");
+
+      alert("🚀 結帳資料核對成功！\n下單 API 開發中...\n我們下一步將實作預約時間與傳送 LINE 通知。");
+    }
 
     window.onload = init;
   </script>
