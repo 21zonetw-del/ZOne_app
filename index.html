@@ -312,29 +312,29 @@
       }
     }
 
-  function submitOrder() {
-  const name = document.getElementById('cust-name').value;
-  const phone = document.getElementById('cust-phone').value;
-  const address = document.getElementById('cust-address').value;
-  const orderDate = document.getElementById('order-date').value;
-  const orderTime = document.getElementById('order-time').value;
+    function submitOrder() {
+     const name = document.getElementById('cust-name').value;
+     const phone = document.getElementById('cust-phone').value;
+     const address = document.getElementById('cust-address').value;
+     const orderDate = document.getElementById('order-date').value;
+     const orderTime = document.getElementById('order-time').value;
 
-  if (!name) return alert("請填寫姓名！");
-  if (!/^09\d{8}$/.test(phone)) return alert("電話格式錯誤！");
-  if (deliveryMode === 'delivery' && !address) return alert("請填寫外送地址！");
+     if (!name) return alert("請填寫姓名！");
+     if (!/^09\d{8}$/.test(phone)) return alert("電話格式錯誤！");
+     if (deliveryMode === 'delivery' && !address) return alert("請填寫外送地址！");
 
-  let userId = liff.isLoggedIn() ? liff.getDecodedIDToken().sub : "訪客";
+     let userId = liff.isLoggedIn() ? liff.getDecodedIDToken().sub : "訪客";
 
-  const orderPayload = {
-    userId: userId,
-    name: name,
-    phone: phone,
-    deliveryMode: deliveryMode,
-    address: address || "無",
-    reserveTime: `${orderDate} ${orderTime}`,
-    cart: cart,
-    total: document.getElementById('final-price').innerText
-  };
+      const orderPayload = {
+      userId: userId,
+      name: name,
+      phone: phone,
+      deliveryMode: deliveryMode,
+      address: address || "無",
+      reserveTime: `${orderDate} ${orderTime}`,
+      cart: cart,
+      total: document.getElementById('final-price').innerText
+    };
 
   // 顯示 Loading
   const loading = document.createElement('div');
@@ -344,25 +344,36 @@
 
   fetch(GAS_URL, {
     method: 'POST',
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(orderPayload)
+    // 移除 headers，讓瀏覽器自動處理，這是繞過某些 CORS 限制的常見做法
+    body: JSON.stringify(orderPayload) 
   })
-  .then(res => res.json())
-  .then(result => {
+  .then(res => {
+    // 這裡是最關鍵的！我們先不要急著把它當成 JSON，先拿純文字來看
+    return res.text(); 
+  })
+  .then(rawText => {
     document.body.removeChild(loading);
-    if (result.status === "success") {
-      document.getElementById('success-price').innerText = orderPayload.total;
-      document.getElementById('view-checkout').classList.add('hidden');
-      document.getElementById('view-success').classList.remove('hidden');
-      cart = {};
-      localStorage.removeItem(CACHE_KEY);
-    } else {
-      alert("失敗：" + (result.message || "未知錯誤"));
+    try {
+      // 嘗試把純文字轉回 JSON
+      const result = JSON.parse(rawText); 
+      if (result.status === "success") {
+        document.getElementById('success-price').innerText = orderPayload.total;
+        document.getElementById('view-checkout').classList.add('hidden');
+        document.getElementById('view-success').classList.remove('hidden');
+        cart = {};
+        localStorage.removeItem(CACHE_KEY);
+      } else {
+        alert("失敗：" + (result.message || "錯誤原因被隱藏了"));
+      }
+    } catch (e) {
+      // 如果轉 JSON 失敗，代表大腦回傳了我們看不懂的東西 (例如 HTML 錯誤頁面)
+      // 這時候把拿到的純文字直接印出來！這就是破案關鍵！
+      alert("解析大腦回覆失敗，原始內容為：\n\n" + rawText.substring(0, 300)); 
     }
   })
   .catch(err => {
     if (document.body.contains(loading)) document.body.removeChild(loading);
-    alert("網路錯誤：" + err);
+    alert("網路傳輸徹底失敗，請檢查網路連線或 GAS_URL 是否正確：" + err);
   });
 }
     
