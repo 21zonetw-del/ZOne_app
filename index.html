@@ -102,10 +102,12 @@
 
   <div id="age-modal" class="fixed inset-0 bg-black z-[70] hidden flex items-center justify-center p-6" onclick="event.stopPropagation()">
     <div class="bg-slate-900 border border-slate-700 rounded-[2rem] p-8 max-w-sm w-full shadow-2xl">
-      <div class="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+      <div class="w-16 h-16 bg-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
       </div>
-      <h2 class="text-2xl font-black text-white text-center mb-4">未滿 18 歲禁止飲酒</h2>
+      <h2 class="text-2xl font-black text-white text-center mb-1">未滿 18 歲禁止飲酒</h2>
+      <p class="text-red-500 text-center font-black text-sm mb-6 tracking-widest">「我們的酒很純，規矩也很嚴。」</p>
+      
       <p class="text-slate-400 text-sm leading-relaxed mb-6 text-justify">您即將結帳的清單包含 ZOne 酒精飲品。外送或取餐時，請務必出示<span class="text-white font-bold">實體身分證件</span>供人員核對。<br><br>若無法證明年滿 18 歲，我們將依法拒絕交貨且<span class="text-red-400 font-bold">不予退款</span>。</p>
       
       <label class="flex items-start gap-3 mb-8 cursor-pointer">
@@ -114,8 +116,8 @@
       </label>
 
       <div class="flex gap-3">
-        <button onclick="document.getElementById('age-modal').classList.add('hidden')" class="flex-1 py-3 rounded-xl font-bold bg-slate-800 text-slate-400">返回修改</button>
-        <button onclick="confirmAge()" class="flex-1 py-3 rounded-xl font-bold bg-red-600 text-white shadow-lg shadow-red-600/20">同意並結帳</button>
+        <button onclick="document.getElementById('age-modal').classList.add('hidden')" class="flex-1 py-3 rounded-xl font-bold bg-slate-800 text-slate-400 active:bg-slate-700">返回修改</button>
+        <button onclick="confirmAge()" class="flex-1 py-3 rounded-xl font-bold bg-red-600 text-white shadow-lg shadow-red-600/20 active:scale-95 transition-transform">同意並結帳</button>
       </div>
     </div>
   </div>
@@ -165,7 +167,17 @@
     function processData(data) {
       rawMenuData = data;
       allProducts = {};
-      for(let b in data) { for(let c in data[b]) { data[b][c].forEach(p => { allProducts[p.id] = p; }); } }
+      
+      // 修復點：在扁平化資料時，把外層的 brand (Owner) 塞進產品屬性裡
+      for(let brand in data) { 
+        for(let cat in data[brand]) { 
+          data[brand][cat].forEach(p => { 
+            p.owner = brand; // 補上遺失的品牌身分證
+            allProducts[p.id] = p; 
+          }); 
+        } 
+      }
+      
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('menu-container').classList.remove('hidden');
       switchBrand('ZOne');
@@ -276,10 +288,17 @@
       const phone = document.getElementById('cust-phone').value;
       const address = document.getElementById('cust-address').value;
 
-      if (!name || !phone) return alert("請填寫姓名與聯絡電話！");
+      if (!name) return alert("請填寫您的姓名！");
+      
+      // 嚴格電話格式防呆：必須是 09 開頭的 10 碼數字
+      const phoneRegex = /^09\d{8}$/;
+      if (!phoneRegex.test(phone)) {
+        return alert("電話格式錯誤！請輸入正確的手機號碼 (例如：0912345678)");
+      }
+
       if (deliveryMode === 'delivery' && !address) return alert("請填寫外送地址！");
 
-      alert("🚀 結帳資料核對成功！\n下單 API 開發中...\n我們下一步將實作預約時間與傳送 LINE 通知。");
+      alert("🚀 結帳資料核對成功！\n\n您已通過防呆測試。我們接下來將實作最複雜的「時間預約鎖」。");
     }
 
     window.onload = init;
