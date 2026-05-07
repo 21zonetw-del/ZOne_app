@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ZOne X 火茂山丈 聯名選單</title>
+  <title>ZOne X 火茂山丈 聯合行動燒烤酒吧</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -21,11 +21,13 @@
   </nav>
 
   <main class="p-4 max-w-md mx-auto">
-    <div id="loading" class="text-center py-20">
-      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent mb-4"></div>
-      <p class="text-gray-400 animate-pulse">同步 ZOne X 火茂山丈 營運數據...</p>
+    <div id="loading" class="space-y-6">
+      <div class="h-6 bg-gray-200 rounded-md w-1/3 animate-pulse"></div>
+      <div class="h-24 bg-gray-200 rounded-[2rem] animate-pulse"></div>
+      <div class="h-24 bg-gray-200 rounded-[2rem] animate-pulse"></div>
+      <p class="text-center text-gray-400 text-sm">正在同步營運數據...</p>
     </div>
-    <div id="menu-container" class="space-y-10 hidden"></div>
+    <div id="menu-container" class="hidden space-y-10 pb-20"></div>
   </main>
 
   <footer class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t p-4 pb-8 z-50 shadow-2xl">
@@ -34,7 +36,7 @@
         <p class="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">ESTIMATED TOTAL</p>
         <p class="text-3xl font-black text-indigo-600">$ <span id="total-price">0</span></p>
       </div>
-      <button class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold shadow-xl shadow-indigo-100 active:scale-95 transition-all">
+      <button onclick="alert('下單功能開發中，目前預估：$' + document.getElementById('total-price').innerText)" class="bg-indigo-600 text-white px-8 py-4 rounded-2xl font-bold shadow-xl shadow-indigo-100 active:scale-95 transition-all">
         確認清單 (<span id="total-qty">0</span>)
       </button>
     </div>
@@ -47,42 +49,92 @@
         <h2 id="modal-name" class="text-2xl font-black text-gray-800"></h2>
         <div class="h-1 w-12 bg-indigo-500 my-4 rounded-full"></div>
         <p id="modal-desc" class="text-gray-500 leading-relaxed text-sm"></p>
-        <button onclick="closeModal()" class="mt-10 w-full bg-slate-50 py-4 rounded-2xl font-bold text-gray-400 active:bg-slate-100">關閉視窗</button>
+        <button onclick="closeModal()" class="mt-10 w-full bg-slate-50 py-4 rounded-2xl font-bold text-gray-400">關閉視窗</button>
       </div>
     </div>
   </div>
 
   <script>
+    const LIFF_ID = "2009972806-P4cPUWMS"; 
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbzHWEQt8cjI8ne6pWPD3p-M35vzM5hLtvE-rSg3GfoOklXUxsNcOtwkVTuEdXyFhYeGvA/exec";
+    const CACHE_KEY = "zone_menu_cache";
+    const CACHE_TIME_KEY = "zone_menu_cache_time";
+
     let rawMenuData = {};
-    let allProducts = {}; // 用於快速查找單價 { id: price }
+    let allProducts = {};
     let currentBrand = "ZOne";
     let cart = {}; 
 
     async function init() {
       try {
-        await liff.init({ liffId: "2009972806-P4cPUWMS" });
+        await liff.init({ liffId: LIFF_ID });
         if (!liff.isLoggedIn()) liff.login();
         fetchMenu();
-      } catch (err) { alert("初始化失敗: " + err.message); }
+      } catch (err) { console.error("LIFF 錯誤:", err); }
     }
 
     function fetchMenu() {
-      const GAS_URL = "https://script.google.com/macros/s/AKfycbzHWEQt8cjI8ne6pWPD3p-M35vzM5hLtvE-rSg3GfoOklXUxsNcOtwkVTuEdXyFhYeGvA/exec";
+      const cachedData = localStorage.getItem(CACHE_KEY);
+      const lastFetch = localStorage.getItem(CACHE_TIME_KEY);
+      const now = new Date().getTime();
+
+      // 如果有快取，立即顯示
+      if (cachedData) {
+        console.log("快取命中，瞬間啟動介面...");
+        processData(JSON.parse(cachedData));
+        
+        // 如果快取超過 10 分鐘，背景偷偷更新
+        if (now - lastFetch > 600000) {
+          silentlyUpdate();
+        }
+      } else {
+        // 沒快取，走完整載入流程
+        performFullFetch();
+      }
+    }
+
+    function performFullFetch() {
       fetch(`${GAS_URL}?action=getMenu`)
         .then(res => res.json())
         .then(data => {
-          rawMenuData = data;
-          // 建立全域產品索引，方便算錢
+          saveToCache(data);
+          processData(data);
+        })
+        .catch(err => alert("初次連線失敗：" + err));
+    }
+
+    function silentlyUpdate() {
+      console.log("背景同步數據中...");
+      fetch(`${GAS_URL}?action=getMenu`)
+        .then(res => res.json())
+        .then(data => {
+          saveToCache(data);
+          // 背景更新不強制重新渲染，避免客人操作時畫面跳動
+          // 但我們可以靜態更新 allProducts 索引
           for(let b in data) {
             for(let c in data[b]) {
               data[b][c].forEach(p => { allProducts[p.id] = p; });
             }
           }
-          document.getElementById('loading').classList.add('hidden');
-          document.getElementById('menu-container').classList.remove('hidden');
-          switchBrand('ZOne');
-        })
-        .catch(err => alert("讀取數據失敗：" + err));
+        });
+    }
+
+    function saveToCache(data) {
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+      localStorage.setItem(CACHE_TIME_KEY, new Date().getTime());
+    }
+
+    function processData(data) {
+      rawMenuData = data;
+      allProducts = {};
+      for(let b in data) {
+        for(let c in data[b]) {
+          data[b][c].forEach(p => { allProducts[p.id] = p; });
+        }
+      }
+      document.getElementById('loading').classList.add('hidden');
+      document.getElementById('menu-container').classList.remove('hidden');
+      switchBrand(currentBrand);
     }
 
     function switchBrand(brand) {
@@ -97,29 +149,25 @@
       const brandData = rawMenuData[currentBrand] || {};
       let html = "";
 
-      if (Object.keys(brandData).length === 0) {
-        html = `<div class="text-center py-20 text-gray-300">目前沒有可供應的項目</div>`;
-      } else {
-        for (let cat in brandData) {
-          html += `<section><div class="flex items-center gap-2 mb-5 px-2"><div class="h-5 w-1 bg-indigo-600 rounded-full"></div><h3 class="font-black text-lg text-slate-800 tracking-wider">${cat}</h3></div><div class="grid gap-4">`;
-          brandData[cat].forEach(item => {
-            const qty = cart[item.id] || 0;
-            html += `
-              <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4 active:bg-slate-50 transition-colors">
-                <div onclick="showModal('${item.id}')" class="w-16 h-16 bg-slate-100 rounded-2xl flex-shrink-0 bg-cover bg-center border" style="background-image: url('${item.img || ''}')"></div>
-                <div class="flex-1" onclick="showModal('${item.id}')">
-                  <h4 class="font-bold text-gray-800">${item.name}</h4>
-                  <p class="text-indigo-600 font-black text-xl">$${item.price}</p>
-                </div>
-                <div class="flex items-center bg-slate-100/50 rounded-2xl p-1 border border-slate-200">
-                  <button onclick="updateQty('${item.id}', -1)" class="w-10 h-10 font-bold text-gray-400 active:text-indigo-600">-</button>
-                  <span id="qty-${item.id}" class="w-8 text-center font-black text-indigo-700">${qty}</span>
-                  <button onclick="updateQty('${item.id}', 1)" class="w-10 h-10 font-bold text-indigo-600 active:scale-125">+</button>
-                </div>
-              </div>`;
-          });
-          html += `</div></section>`;
-        }
+      for (let cat in brandData) {
+        html += `<section><div class="flex items-center gap-2 mb-5 px-2"><div class="h-5 w-1 bg-indigo-600 rounded-full"></div><h3 class="font-black text-lg text-slate-800 tracking-wider">${cat}</h3></div><div class="grid gap-4">`;
+        brandData[cat].forEach(item => {
+          const qty = cart[item.id] || 0;
+          html += `
+            <div class="bg-white p-5 rounded-[2rem] border border-slate-100 shadow-sm flex items-center gap-4">
+              <div onclick="showModal('${item.id}')" class="w-16 h-16 bg-slate-100 rounded-2xl flex-shrink-0 bg-cover bg-center border" style="background-image: url('${item.img || ''}')"></div>
+              <div class="flex-1" onclick="showModal('${item.id}')">
+                <h4 class="font-bold text-gray-800">${item.name}</h4>
+                <p class="text-indigo-600 font-black text-xl">$${item.price}</p>
+              </div>
+              <div class="flex items-center bg-slate-100/50 rounded-2xl p-1 border border-slate-200">
+                <button onclick="updateQty('${item.id}', -1)" class="w-10 h-10 font-bold text-gray-400">-</button>
+                <span id="qty-${item.id}" class="w-8 text-center font-black text-indigo-700">${qty}</span>
+                <button onclick="updateQty('${item.id}', 1)" class="w-10 h-10 font-bold text-indigo-600">+</button>
+              </div>
+            </div>`;
+        });
+        html += `</div></section>`;
       }
       container.innerHTML = html;
     }
@@ -127,10 +175,8 @@
     function updateQty(id, delta) {
       cart[id] = (cart[id] || 0) + delta;
       if (cart[id] < 0) cart[id] = 0;
-      
       const qtySpan = document.getElementById(`qty-${id}`);
       if (qtySpan) qtySpan.innerText = cart[id];
-      
       calculateTotal();
     }
 
