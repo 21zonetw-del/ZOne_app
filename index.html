@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZOne X 火茂山丈</title>
+  <title>ZOne X 火茂山丈 聯合行動燒烤酒吧</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -12,29 +12,23 @@
   <header class="bg-indigo-900 text-white p-6 sticky top-0 z-50 shadow-lg">
     <div class="flex justify-between items-center">
       <div>
-        <h1 class="text-2xl font-black tracking-tight">ZOne 營運系統</h1>
+        <h1 class="text-xl font-black">ZOne X 火茂山丈</h1>
         <div class="flex items-center gap-2 mt-1 opacity-80">
           <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-          <p id="userName" class="text-xs font-medium">辨識身分中...</p>
+          <p id="userName" class="text-xs">營運系統啟動中...</p>
         </div>
       </div>
-      <div id="userPic" class="w-12 h-12 rounded-2xl border-2 border-white/20 overflow-hidden bg-white/10 shadow-inner"></div>
+      <div id="userPic" class="w-12 h-12 rounded-2xl border-2 border-white/20 overflow-hidden bg-white/10"></div>
     </div>
   </header>
 
-  <main id="app" class="p-4 max-w-md mx-auto">
+  <main class="p-4 max-w-md mx-auto">
     <div id="loading" class="space-y-6">
-      <div class="space-y-3">
-        <div class="h-6 bg-gray-200 rounded-md w-1/3 animate-pulse"></div>
-        <div class="h-24 bg-gray-200 rounded-3xl animate-pulse"></div>
-        <div class="h-24 bg-gray-200 rounded-3xl animate-pulse"></div>
-      </div>
-      <div class="space-y-3 pt-4">
-        <div class="h-6 bg-gray-200 rounded-md w-1/4 animate-pulse"></div>
-        <div class="h-24 bg-gray-200 rounded-3xl animate-pulse"></div>
-      </div>
+      <div class="h-6 bg-gray-200 rounded-md w-1/3 animate-pulse"></div>
+      <div class="h-24 bg-gray-200 rounded-3xl animate-pulse"></div>
+      <div class="h-24 bg-gray-200 rounded-3xl animate-pulse"></div>
+      <p class="text-center text-gray-400 text-sm">正在同步聯合營運數據...</p>
     </div>
-
     <div id="content" class="hidden space-y-10 pb-20"></div>
   </main>
 
@@ -59,6 +53,7 @@
       fetch(`${GAS_URL}?action=getMenu`)
         .then(res => res.json())
         .then(data => {
+          if (data["錯誤"]) throw new Error(data["錯誤"]);
           let html = "";
           for (let cat in data) {
             html += `
@@ -74,13 +69,9 @@
                 <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100 flex justify-between items-center active:scale-[0.97] transition-transform">
                   <div class="flex-1">
                     <h4 class="font-bold text-gray-900 text-lg">${item.name}</h4>
-                    <div class="flex items-baseline gap-1 mt-1">
-                      <span class="text-indigo-600 font-black text-2xl">$${item.price}</span>
-                    </div>
+                    <div class="text-indigo-600 font-black text-2xl mt-1">$${item.price}</div>
                   </div>
-                  <button class="bg-indigo-600 text-white font-bold px-6 py-3 rounded-2xl shadow-lg shadow-indigo-200 active:bg-indigo-700 transition">
-                    選購
-                  </button>
+                  <button class="bg-indigo-600 text-white font-bold px-6 py-3 rounded-2xl shadow-lg shadow-indigo-200">選購</button>
                 </div>`;
             });
             html += `</div></section>`;
@@ -89,9 +80,11 @@
           document.getElementById('loading').classList.add('hidden');
           document.getElementById('content').classList.remove('hidden');
         })
-        .catch(err => alert("同步雲端失敗：" + err));
+        .catch(err => {
+          console.error(err);
+          alert("數據載入失敗，請確認 GAS 部署是否正確。\n詳情：" + err.message);
+        });
     }
-
     window.onload = initLiff;
   </script>
 </body>
