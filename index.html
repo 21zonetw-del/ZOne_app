@@ -43,6 +43,14 @@
   </div>
 
   <div id="view-checkout" class="hidden pb-10 bg-gray-50 min-h-screen">
+    <section class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 mt-6">
+        <h3 class="font-black text-gray-800 mb-4">⏰ 選擇預約時間</h3>
+        <div class="flex gap-2">
+          <select id="order-date" onchange="generateTimeSlots()" class="flex-1 bg-slate-50 p-4 rounded-xl border-none font-bold text-gray-700 focus:ring-2 focus:ring-indigo-500"></select>
+          <select id="order-time" class="flex-1 bg-slate-50 p-4 rounded-xl border-none font-bold text-gray-700 focus:ring-2 focus:ring-indigo-500"></select>
+        </div>
+        <p id="time-warning" class="text-xs font-bold text-red-500 mt-3 hidden"></p>
+      </section>
     <header class="bg-white p-4 sticky top-0 z-40 shadow-sm flex items-center gap-4">
       <button onclick="backToMenu()" class="text-indigo-600 font-bold px-4 py-2 bg-indigo-50 rounded-xl">← 返回加點</button>
       <h1 class="text-lg font-black text-gray-800">確認訂單</h1>
@@ -258,7 +266,10 @@
     function proceedToCheckout() {
       document.getElementById('view-menu').classList.add('hidden');
       document.getElementById('view-checkout').classList.remove('hidden');
-      window.scrollTo(0, 0); // 捲動到頂部
+      
+      initDateTimeSelectors(); // 🔴 進入結帳頁時，啟動時間計算引擎
+      
+      window.scrollTo(0, 0); 
     }
 
     function backToMenu() {
@@ -301,6 +312,58 @@
       alert("🚀 結帳資料核對成功！\n\n您已通過防呆測試。我們接下來將實作最複雜的「時間預約鎖」。");
     }
 
+     function initDateTimeSelectors() {
+      let maxAdvance = 0;
+      let hasBBQ = false;
+
+      // 檢查購物籃內容，尋找最高限制條件
+      for (let id in cart) {
+        let p = allProducts[id];
+        if (p && p.advanceDays > maxAdvance) maxAdvance = parseInt(p.advanceDays);
+        if (p && p.owner === "Huamao") hasBBQ = true;
+      }
+
+      const dateSelect = document.getElementById('order-date');
+      dateSelect.innerHTML = '';
+      
+      const today = new Date();
+      // 動態產生接下來 5 天的日期選單
+      for (let i = 0; i < 5; i++) {
+        if (i < maxAdvance) continue; // 🧨 豬肋排防呆：如果限制天數為1，i=0(今天)就會被略過
+        
+        let d = new Date(today);
+        d.setDate(today.getDate() + i);
+        let dateStr = `${d.getMonth()+1}/${d.getDate()}`;
+        let label = i === 0 ? `今天 (${dateStr})` : i === 1 ? `明天 (${dateStr})` : dateStr;
+        
+        dateSelect.innerHTML += `<option value="${d.toISOString().split('T')[0]}">${label}</option>`;
+      }
+
+      // 顯示警告文案
+      const warning = document.getElementById('time-warning');
+      if (maxAdvance > 0) {
+        warning.innerText = `⚠️ 您的訂單包含需提前 ${maxAdvance} 日預約之品項，已自動為您鎖定日期。`;
+        warning.classList.remove('hidden');
+      } else {
+        warning.classList.add('hidden');
+      }
+
+      generateTimeSlots(); // 根據選擇的日期產生時間
+    }
+
+    function generateTimeSlots() {
+      const timeSelect = document.getElementById('order-time');
+      timeSelect.innerHTML = '';
+      
+      // 第一階段防呆：統一限制在火茂山丈的營業交集 (18:00 - 01:00)
+      // 未來可在此加入判斷「若是今天且時間已過，過濾掉過去的時間」
+      const slots = ["18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "00:00", "00:30", "01:00"];
+      
+      slots.forEach(slot => {
+        timeSelect.innerHTML += `<option value="${slot}">${slot}</option>`;
+      });
+    }
+    
     window.onload = init;
   </script>
 </body>
