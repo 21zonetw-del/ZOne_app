@@ -312,71 +312,59 @@
       }
     }
 
-     function submitOrder() {
-      const name = document.getElementById('cust-name').value;
-      const phone = document.getElementById('cust-phone').value;
-      const address = document.getElementById('cust-address').value;
-      const orderDate = document.getElementById('order-date').value;
-      const orderTime = document.getElementById('order-time').value;
+  function submitOrder() {
+  const name = document.getElementById('cust-name').value;
+  const phone = document.getElementById('cust-phone').value;
+  const address = document.getElementById('cust-address').value;
+  const orderDate = document.getElementById('order-date').value;
+  const orderTime = document.getElementById('order-time').value;
 
-      if (!name) return alert("請填寫您的姓名！");
-      if (!/^09\d{8}$/.test(phone)) return alert("電話格式錯誤！請輸入正確的手機號碼");
-      if (deliveryMode === 'delivery' && !address) return alert("請填寫外送地址！");
+  if (!name) return alert("請填寫姓名！");
+  if (!/^09\d{8}$/.test(phone)) return alert("電話格式錯誤！");
+  if (deliveryMode === 'delivery' && !address) return alert("請填寫外送地址！");
 
-      // 取得客人的 LINE User ID
-      let userId = "未登入訪客";
-      if (liff.isLoggedIn()) {
-        const decodedIDToken = liff.getDecodedIDToken();
-        if (decodedIDToken) userId = decodedIDToken.sub; 
-      }
+  let userId = liff.isLoggedIn() ? liff.getDecodedIDToken().sub : "訪客";
 
-      const orderPayload = {
-        userId: userId,
-        name: name,
-        phone: phone,
-        deliveryMode: deliveryMode,
-        address: address || "無",
-        reserveTime: `${orderDate} ${orderTime}`,
-        cart: cart,
-        total: document.getElementById('final-price').innerText
-      };
+  const orderPayload = {
+    userId: userId,
+    name: name,
+    phone: phone,
+    deliveryMode: deliveryMode,
+    address: address || "無",
+    reserveTime: `${orderDate} ${orderTime}`,
+    cart: cart,
+    total: document.getElementById('final-price').innerText
+  };
 
-      // 安全的 Loading 動畫 (不破壞原 DOM 結構)
-      const loadingDiv = document.createElement('div');
-      loadingDiv.id = "checkout-loading";
-      loadingDiv.className = "fixed inset-0 bg-white/80 z-[100] flex items-center justify-center";
-      loadingDiv.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>`;
-      document.body.appendChild(loadingDiv);
+  // 顯示 Loading
+  const loading = document.createElement('div');
+  loading.className = "fixed inset-0 bg-white/80 z-[100] flex items-center justify-center";
+  loading.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>`;
+  document.body.appendChild(loading);
 
-      // 強制設定為 text/plain，確保 Google GAS 完美接收
-      fetch(GAS_URL, {
-        method: 'POST',
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(orderPayload)
-      })
-      .then(res => res.json())
-      .then(result => {
-        document.body.removeChild(loadingDiv); // 移除 Loading 動畫
-        
-        if (result.status === "success") {
-          // 成功！切換畫面
-          document.getElementById('success-price').innerText = orderPayload.total;
-          document.getElementById('view-checkout').classList.add('hidden');
-          document.getElementById('view-success').classList.remove('hidden');
-          window.scrollTo(0, 0);
-          
-          cart = {};
-          localStorage.removeItem(CACHE_KEY); 
-        } else {
-          // 讓幽靈錯誤現形！直接印出 GAS 回傳了什麼
-          alert("後台處理失敗：" + JSON.stringify(result));
-        }
-      })
-      .catch(err => {
-        document.body.removeChild(loadingDiv);
-        alert("網路連線異常，請稍後再試：" + err);
-      });
+  fetch(GAS_URL, {
+    method: 'POST',
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(orderPayload)
+  })
+  .then(res => res.json())
+  .then(result => {
+    document.body.removeChild(loading);
+    if (result.status === "success") {
+      document.getElementById('success-price').innerText = orderPayload.total;
+      document.getElementById('view-checkout').classList.add('hidden');
+      document.getElementById('view-success').classList.remove('hidden');
+      cart = {};
+      localStorage.removeItem(CACHE_KEY);
+    } else {
+      alert("失敗：" + (result.message || "未知錯誤"));
     }
+  })
+  .catch(err => {
+    if (document.body.contains(loading)) document.body.removeChild(loading);
+    alert("網路錯誤：" + err);
+  });
+}
     
      function initDateTimeSelectors() {
       let maxAdvance = 0;
