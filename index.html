@@ -2,90 +2,143 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ZOne X 火茂山丈 聯合行動燒烤酒吧</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ZOne X 火茂山丈 聯名選單</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .active-tab { border-bottom: 4px solid #4f46e5; color: #4f46e5; font-weight: 900; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+  </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-slate-50 min-h-screen pb-32">
 
-  <header class="bg-indigo-900 text-white p-6 sticky top-0 z-50 shadow-lg">
-    <div class="flex justify-between items-center">
-      <div>
-        <h1 class="text-xl font-black">ZOne X 火茂山丈</h1>
-        <div class="flex items-center gap-2 mt-1 opacity-80">
-          <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-          <p id="userName" class="text-xs">營運系統啟動中...</p>
-        </div>
-      </div>
-      <div id="userPic" class="w-12 h-12 rounded-2xl border-2 border-white/20 overflow-hidden bg-white/10"></div>
+  <nav class="bg-white sticky top-0 z-40 shadow-sm">
+    <div class="flex text-center">
+      <button onclick="switchBrand('ZOne')" id="tab-ZOne" class="flex-1 py-4 text-gray-400 transition-all active-tab">ZOne 酒館</button>
+      <button onclick="switchBrand('Huamao')" id="tab-Huamao" class="flex-1 py-4 text-gray-400 transition-all">火茂山丈 燒烤</button>
     </div>
-  </header>
+  </nav>
 
   <main class="p-4 max-w-md mx-auto">
-    <div id="loading" class="space-y-6">
-      <div class="h-6 bg-gray-200 rounded-md w-1/3 animate-pulse"></div>
-      <div class="h-24 bg-gray-200 rounded-3xl animate-pulse"></div>
-      <div class="h-24 bg-gray-200 rounded-3xl animate-pulse"></div>
-      <p class="text-center text-gray-400 text-sm">正在同步聯合營運數據...</p>
-    </div>
-    <div id="content" class="hidden space-y-10 pb-20"></div>
+    <div id="loading" class="text-center py-20 text-gray-400 animate-pulse">正在備酒與生火中...</div>
+    <div id="menu-container" class="space-y-8 hidden"></div>
   </main>
 
-  <script>
-    const LIFF_ID = "2009972806-P4cPUWMS"; 
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzHWEQt8cjI8ne6pWPD3p-M35vzM5hLtvE-rSg3GfoOklXUxsNcOtwkVTuEdXyFhYeGvA/exec"; 
+  <footer class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t p-4 pb-8 z-50 shadow-2xl">
+    <div class="max-w-md mx-auto flex justify-between items-center">
+      <div>
+        <div class="text-xs text-gray-400">預計總額</div>
+        <div class="text-2xl font-black text-indigo-600">$ <span id="total-price">0</span></div>
+      </div>
+      <button class="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold shadow-lg shadow-indigo-200">
+        確認清單 (<span id="total-qty">0</span>)
+      </button>
+    </div>
+  </footer>
 
-    async function initLiff() {
-      try {
-        await liff.init({ liffId: LIFF_ID });
-        if (!liff.isLoggedIn()) { liff.login(); return; }
-        const profile = await liff.getProfile();
-        document.getElementById('userName').innerText = `你好，${profile.displayName}`;
-        if (profile.pictureUrl) {
-          document.getElementById('userPic').innerHTML = `<img src="${profile.pictureUrl}" class="w-full h-full object-cover">`;
-        }
-        loadMenu();
-      } catch (err) { alert("LIFF 啟動失敗：" + err.message); }
+  <div id="modal" class="fixed inset-0 bg-black/60 z-[60] hidden flex items-center justify-center p-6 backdrop-blur-sm" onclick="closeModal()">
+    <div class="bg-white rounded-[2.5rem] overflow-hidden max-w-sm w-full shadow-2xl" onclick="event.stopPropagation()">
+      <div id="modal-img" class="h-64 bg-slate-200 bg-cover bg-center"></div>
+      <div class="p-8">
+        <h2 id="modal-name" class="text-2xl font-black text-gray-800"></h2>
+        <p id="modal-desc" class="mt-4 text-gray-500 leading-relaxed"></p>
+        <button onclick="closeModal()" class="mt-8 w-full bg-slate-100 py-4 rounded-2xl font-bold text-gray-400">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let rawMenuData = {};
+    let currentBrand = "ZOne";
+    let cart = {}; // { itemId: quantity }
+
+    async function init() {
+      await liff.init({ liffId: "2009972806-P4cPUWMS" });
+      if (!liff.isLoggedIn()) liff.login();
+      fetchMenu();
     }
 
-    function loadMenu() {
+    function fetchMenu() {
+      const GAS_URL = "https://script.google.com/macros/s/AKfycbzHWEQt8cjI8ne6pWPD3p-M35vzM5hLtvE-rSg3GfoOklXUxsNcOtwkVTuEdXyFhYeGvA/exec";
       fetch(`${GAS_URL}?action=getMenu`)
         .then(res => res.json())
         .then(data => {
-          if (data["錯誤"]) throw new Error(data["錯誤"]);
-          let html = "";
-          for (let cat in data) {
-            html += `
-              <section>
-                <div class="flex items-center gap-3 mb-5">
-                  <div class="h-6 w-1.5 bg-indigo-600 rounded-full"></div>
-                  <h3 class="font-black text-xl text-gray-800">${cat}</h3>
-                </div>
-                <div class="grid gap-4">`;
-            
-            data[cat].forEach(item => {
-              html += `
-                <div class="bg-white p-5 rounded-[2rem] shadow-sm border border-gray-100 flex justify-between items-center active:scale-[0.97] transition-transform">
-                  <div class="flex-1">
-                    <h4 class="font-bold text-gray-900 text-lg">${item.name}</h4>
-                    <div class="text-indigo-600 font-black text-2xl mt-1">$${item.price}</div>
-                  </div>
-                  <button class="bg-indigo-600 text-white font-bold px-6 py-3 rounded-2xl shadow-lg shadow-indigo-200">選購</button>
-                </div>`;
-            });
-            html += `</div></section>`;
-          }
-          document.getElementById('content').innerHTML = html;
+          rawMenuData = data;
           document.getElementById('loading').classList.add('hidden');
-          document.getElementById('content').classList.remove('hidden');
-        })
-        .catch(err => {
-          console.error(err);
-          alert("數據載入失敗，請確認 GAS 部署是否正確。\n詳情：" + err.message);
+          document.getElementById('menu-container').classList.remove('hidden');
+          switchBrand('ZOne');
         });
     }
-    window.onload = initLiff;
+
+    function switchBrand(brand) {
+      currentBrand = brand;
+      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-tab'));
+      document.getElementById(`tab-${brand}`).classList.add('active-tab');
+      renderMenu();
+    }
+
+    function renderMenu() {
+      const container = document.getElementById('menu-container');
+      const brandData = rawMenuData[currentBrand] || {};
+      let html = "";
+
+      for (let cat in brandData) {
+        html += `<section><div class="flex items-center gap-2 mb-4"><div class="h-5 w-1 bg-indigo-600 rounded-full"></div><h3 class="font-black text-lg">${cat}</h3></div><div class="grid gap-3">`;
+        brandData[cat].forEach(item => {
+          const qty = cart[item.id] || 0;
+          html += `
+            <div class="bg-white p-4 rounded-[1.8rem] border border-slate-100 shadow-sm flex items-center gap-4">
+              <div onclick="showModal('${item.id}')" class="w-16 h-16 bg-slate-100 rounded-2xl flex-shrink-0 bg-cover bg-center" style="background-image: url('${item.img || ''}')"></div>
+              <div class="flex-1" onclick="showModal('${item.id}')">
+                <h4 class="font-bold text-gray-800">${item.name}</h4>
+                <p class="text-indigo-600 font-black">$${item.price}</p>
+              </div>
+              <div class="flex items-center bg-slate-50 rounded-xl p-1 border">
+                <button onclick="updateQty('${item.id}', -1, ${item.price})" class="w-8 h-8 font-bold text-gray-400">-</button>
+                <span id="qty-${item.id}" class="w-8 text-center font-black text-indigo-600">${qty}</span>
+                <button onclick="updateQty('${item.id}', 1, ${item.price})" class="w-8 h-8 font-bold text-indigo-600">+</button>
+              </div>
+            </div>`;
+        });
+        html += `</div></section>`;
+      }
+      container.innerHTML = html;
+    }
+
+    function updateQty(id, delta, price) {
+      cart[id] = (cart[id] || 0) + delta;
+      if (cart[id] < 0) cart[id] = 0;
+      document.getElementById(`qty-${id}`).innerText = cart[id];
+      calculateTotal();
+    }
+
+    function calculateTotal() {
+      let total = 0, count = 0;
+      // 這裡需要遍歷所有品牌的所有商品來計算總額，簡化起見我們先這樣處理
+      // 實務上建議把所有產品攤平成一個 lookup 表
+      alert("計算邏輯待補完，請先觀察計數器效果");
+    }
+
+    function showModal(id) {
+      // 從 rawMenuData 找產品資訊
+      let item = null;
+      for (let b in rawMenuData) {
+        for (let c in rawMenuData[b]) {
+          let found = rawMenuData[b][c].find(i => i.id === id);
+          if (found) { item = found; break; }
+        }
+      }
+      if (!item) return;
+      document.getElementById('modal-name').innerText = item.name;
+      document.getElementById('modal-desc').innerText = item.desc || "暫無詳細描述。";
+      document.getElementById('modal-img').style.backgroundImage = `url('${item.img || ''}')`;
+      document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+    window.onload = init;
   </script>
 </body>
 </html>
