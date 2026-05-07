@@ -323,14 +323,13 @@
       if (!/^09\d{8}$/.test(phone)) return alert("電話格式錯誤！請輸入正確的手機號碼");
       if (deliveryMode === 'delivery' && !address) return alert("請填寫外送地址！");
 
-      // 取得客人的 LINE User ID (如果有的話)
+      // 取得客人的 LINE User ID
       let userId = "未登入訪客";
       if (liff.isLoggedIn()) {
         const decodedIDToken = liff.getDecodedIDToken();
         if (decodedIDToken) userId = decodedIDToken.sub; 
       }
 
-      // 封裝訂單資料準備傳給後端
       const orderPayload = {
         userId: userId,
         name: name,
@@ -342,39 +341,43 @@
         total: document.getElementById('final-price').innerText
       };
 
-      // 🔴 POST 請求：將資料傳給 GAS 大腦
-      document.getElementById('view-checkout').innerHTML += `<div class="fixed inset-0 bg-white/80 z-50 flex items-center justify-center"><div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div></div>`; // 加上簡單的 Loading 防止連點
+      // 安全的 Loading 動畫 (不破壞原 DOM 結構)
+      const loadingDiv = document.createElement('div');
+      loadingDiv.id = "checkout-loading";
+      loadingDiv.className = "fixed inset-0 bg-white/80 z-[100] flex items-center justify-center";
+      loadingDiv.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>`;
+      document.body.appendChild(loadingDiv);
 
+      // 強制設定為 text/plain，確保 Google GAS 完美接收
       fetch(GAS_URL, {
         method: 'POST',
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(orderPayload)
       })
       .then(res => res.json())
       .then(result => {
+        document.body.removeChild(loadingDiv); // 移除 Loading 動畫
+        
         if (result.status === "success") {
-          // 寫入成功，切換到成功畫面
+          // 成功！切換畫面
           document.getElementById('success-price').innerText = orderPayload.total;
           document.getElementById('view-checkout').classList.add('hidden');
           document.getElementById('view-success').classList.remove('hidden');
           window.scrollTo(0, 0);
-
-      // 切換畫面到成功視圖
-      document.getElementById('success-price').innerText = orderPayload.total;
-      document.getElementById('view-checkout').classList.add('hidden');
-      document.getElementById('view-success').classList.remove('hidden');
-      window.scrollTo(0, 0);
-          // 下單成功後，清空購物車
+          
           cart = {};
-          localStorage.removeItem(CACHE_KEY); // 強制清除快取，下次進來抓最新資料
+          localStorage.removeItem(CACHE_KEY); 
         } else {
-          alert("訂單送出失敗，請聯絡客服：" + result.message);
+          // 讓幽靈錯誤現形！直接印出 GAS 回傳了什麼
+          alert("後台處理失敗：" + JSON.stringify(result));
         }
       })
       .catch(err => {
+        document.body.removeChild(loadingDiv);
         alert("網路連線異常，請稍後再試：" + err);
       });
     }
-
+    
      function initDateTimeSelectors() {
       let maxAdvance = 0;
       let hasBBQ = false;
