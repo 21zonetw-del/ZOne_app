@@ -534,22 +534,27 @@ function fetchDeliveryFee() {
       const now = new Date();
       const currentHour = now.getHours();
       const currentMin = now.getMinutes();
+      const currentTimeInMins = (currentHour < 6 ? currentHour + 24 : currentHour) * 60 + currentMin;
 
       let availableSlotsCount = 0;
 
-      if (isToday) {
+      // 🚀 營業時間判定：18:00 (1080分) 到 凌晨 01:00 (25*60=1500分)
+      const openTimeInMins = 18 * 60; // 1080
+      const closeTimeInMins = 25 * 60; // 1500 (凌晨1點)
+
+      // 只有在「今天是營業日」且「現在正是營業時間」時，才顯示「盡快」
+      if (isToday && currentTimeInMins >= openTimeInMins && currentTimeInMins < closeTimeInMins) {
         timeSelect.innerHTML += `<option value="盡快">盡快出餐 / 送達 </option>`;
         availableSlotsCount++;
       }
 
       slots.forEach(slot => {
-        if (isToday) {
-          let [slotH, slotM] = slot.split(':').map(Number);
-          let effectiveSlotH = slotH < 6 ? slotH + 24 : slotH;
-          let effectiveCurrentH = currentHour < 6 ? currentHour + 24 : currentHour;
-          let slotTimeInMins = effectiveSlotH * 60 + slotM;
-          let currentTimeInMins = effectiveCurrentH * 60 + currentMin;
+        let [slotH, slotM] = slot.split(':').map(Number);
+        let effectiveSlotH = slotH < 6 ? slotH + 24 : slotH;
+        let slotTimeInMins = effectiveSlotH * 60 + slotM;
 
+        if (isToday) {
+          // 隱藏「目前時間 + 30分鐘」之前的絕對時間選項
           if (slotTimeInMins <= currentTimeInMins + 30) {
             return; 
           }
@@ -560,7 +565,11 @@ function fetchDeliveryFee() {
       });
 
       if (availableSlotsCount === 0) {
-        timeSelect.innerHTML = `<option value="">今日已打烊，請選擇明日</option>`;
+        timeSelect.innerHTML = `<option value="">非營業時間，請選擇其他日期</option>`;
+        // 🚀 新增：強制顯示溫馨提醒
+        const warning = document.getElementById('time-warning');
+        warning.innerText = `💡 目前非營業時間，僅開放預約未來時段。`;
+        warning.classList.remove('hidden');
       }
     }
 
