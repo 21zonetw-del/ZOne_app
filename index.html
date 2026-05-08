@@ -434,7 +434,6 @@
       
       const slots = ["18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "00:00", "00:30", "01:00"];
       
-      // 取得客人選擇的日期與今天的日期
       const dateSelect = document.getElementById('order-date').value;
       const todayStr = new Date().toISOString().split('T')[0];
       const isToday = (dateSelect === todayStr);
@@ -445,21 +444,23 @@
 
       let availableSlotsCount = 0;
 
+      // 🚀 商業邏輯升級：如果是今天，第一個選項永遠是「盡快」
+      if (isToday) {
+        timeSelect.innerHTML += `<option value="盡快">盡快出餐 / 送達 (依現場單量)</option>`;
+        availableSlotsCount++;
+      }
+
       slots.forEach(slot => {
-        // 如果選的是今天，進行時間過濾
         if (isToday) {
           let [slotH, slotM] = slot.split(':').map(Number);
-          
-          // 處理跨夜邏輯：把凌晨 00 點和 01 點當作 24 和 25 點來比較
           let effectiveSlotH = slotH < 6 ? slotH + 24 : slotH;
           let effectiveCurrentH = currentHour < 6 ? currentHour + 24 : currentHour;
-
           let slotTimeInMins = effectiveSlotH * 60 + slotM;
           let currentTimeInMins = effectiveCurrentH * 60 + currentMin;
 
-          // 防呆：只顯示「目前時間 + 30分鐘緩衝」之後的時段
+          // 隱藏目前時間 + 30分鐘以內的絕對時間選項
           if (slotTimeInMins <= currentTimeInMins + 30) {
-            return; // 略過這個過期的時段
+            return; 
           }
         }
         
@@ -467,7 +468,6 @@
         availableSlotsCount++;
       });
 
-      // 如果今天已經太晚（例如凌晨 1 點半），所有時段都被濾掉了
       if (availableSlotsCount === 0) {
         timeSelect.innerHTML = `<option value="">今日已打烊，請選擇明日</option>`;
       }
