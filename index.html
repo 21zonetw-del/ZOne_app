@@ -43,32 +43,6 @@
   </div>
 
   <div id="view-checkout" class="hidden pb-10 bg-gray-50 min-h-screen">
-    <section class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 mt-6">
-        <h3 class="font-black text-gray-800 mb-4">⏰ 選擇預約時間</h3>
-        <div class="flex gap-2">
-          <select id="order-date" onchange="generateTimeSlots()" class="flex-1 bg-slate-50 p-4 rounded-xl border-none font-bold text-gray-700 focus:ring-2 focus:ring-indigo-500"></select>
-          <select id="order-time" class="flex-1 bg-slate-50 p-4 rounded-xl border-none font-bold text-gray-700 focus:ring-2 focus:ring-indigo-500"></select>
-        </div>
-        <p id="time-warning" class="text-xs font-bold text-red-500 mt-3 hidden"></p>
-      </section>
-    <div id="view-success" class="hidden min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6">
-    <div class="bg-slate-800 p-8 rounded-[2rem] w-full max-w-sm text-center shadow-2xl border border-slate-700">
-      <div class="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
-        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-      </div>
-      <h2 class="text-2xl font-black text-white mb-2">訂單已送出</h2>
-      <p class="text-slate-400 text-sm leading-relaxed mb-8">我們已將您的需求傳達給職人。<br>請留意您的 LINE 訊息，我們確認接單後將立即通知您！</p>
-      
-      <div class="bg-slate-900 rounded-xl p-4 mb-8 text-left border border-slate-700">
-        <p class="text-xs text-slate-500 font-bold mb-1">預估總額</p>
-        <p class="text-2xl font-black text-indigo-400">$ <span id="success-price">0</span></p>
-      </div>
-
-      <button onclick="liff.closeWindow()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-xl text-lg shadow-lg shadow-indigo-600/30 transition-all">
-        關閉視窗，返回 LINE
-      </button>
-    </div>
-  </div>
     <header class="bg-white p-4 sticky top-0 z-40 shadow-sm flex items-center gap-4">
       <button onclick="backToMenu()" class="text-indigo-600 font-bold px-4 py-2 bg-indigo-50 rounded-xl">← 返回加點</button>
       <h1 class="text-lg font-black text-gray-800">確認訂單</h1>
@@ -76,6 +50,15 @@
 
     <main class="p-4 max-w-md mx-auto space-y-6">
       
+      <section class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 mt-2">
+        <h3 class="font-black text-gray-800 mb-4">⏰ 選擇預約時間</h3>
+        <div class="flex gap-2">
+          <select id="order-date" onchange="generateTimeSlots()" class="flex-1 bg-slate-50 p-4 rounded-xl border-none font-bold text-gray-700 focus:ring-2 focus:ring-indigo-500"></select>
+          <select id="order-time" class="flex-1 bg-slate-50 p-4 rounded-xl border-none font-bold text-gray-700 focus:ring-2 focus:ring-indigo-500"></select>
+        </div>
+        <p id="time-warning" class="text-xs font-bold text-red-500 mt-3 hidden"></p>
+      </section>
+
       <section class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
         <h3 class="font-black text-gray-800 mb-4">📍 取餐方式</h3>
         <div class="flex gap-2">
@@ -123,7 +106,25 @@
           送出訂單
         </button>
       </section>
+
     </main>
+  </div> <div id="view-success" class="hidden min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6">
+    <div class="bg-slate-800 p-8 rounded-[2rem] w-full max-w-sm text-center shadow-2xl border border-slate-700">
+      <div class="w-20 h-20 bg-green-500/20 text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+      </div>
+      <h2 class="text-2xl font-black text-white mb-2">訂單已送出</h2>
+      <p class="text-slate-400 text-sm leading-relaxed mb-8">我們已將您的需求傳達給職人。<br>請留意您的 LINE 訊息，我們確認接單後將立即通知您！</p>
+      
+      <div class="bg-slate-900 rounded-xl p-4 mb-8 text-left border border-slate-700">
+        <p class="text-xs text-slate-500 font-bold mb-1">預估總額</p>
+        <p class="text-2xl font-black text-indigo-400">$ <span id="success-price">0</span></p>
+      </div>
+
+      <button onclick="liff.closeWindow()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-4 rounded-xl text-lg shadow-lg shadow-indigo-600/30 transition-all">
+        關閉視窗，返回 LINE
+      </button>
+    </div>
   </div>
 
   <div id="age-modal" class="fixed inset-0 bg-black z-[70] hidden flex items-center justify-center p-6" onclick="event.stopPropagation()">
@@ -160,18 +161,16 @@
     let deliveryMode = "pickup"; // 預設自取
 
     async function init() {
-      // 柔性 LIFF 登入：即使不在 LINE 裡面，網頁也不會壞掉
       try {
         await liff.init({ liffId: LIFF_ID });
         if (liff.isLoggedIn()) {
           const profile = await liff.getProfile();
-          document.getElementById('cust-name').value = profile.displayName; // 自動填入暱稱
+          document.getElementById('cust-name').value = profile.displayName; 
         }
       } catch (err) { console.log("非 LINE 環境瀏覽"); }
       fetchMenu();
     }
 
-    // --- 載入與菜單邏輯 (維持快取極速版) ---
     function fetchMenu() {
       const cached = localStorage.getItem(CACHE_KEY);
       if (cached) { processData(JSON.parse(cached)); silentlyUpdate(); } 
@@ -194,11 +193,10 @@
       rawMenuData = data;
       allProducts = {};
       
-      // 修復點：在扁平化資料時，把外層的 brand (Owner) 塞進產品屬性裡
       for(let brand in data) { 
         for(let cat in data[brand]) { 
           data[brand][cat].forEach(p => { 
-            p.owner = brand; // 補上遺失的品牌身分證
+            p.owner = brand; 
             allProducts[p.id] = p; 
           }); 
         } 
@@ -255,18 +253,16 @@
       document.getElementById('total-qty').innerText = count;
     }
 
-    // --- 結帳防呆與切換邏輯 ---
     function initCheckout() {
       if (Object.keys(cart).length === 0) return alert("購物籃目前是空的喔！");
       
-      // 檢查是否含有 ZOne (酒精) 產品
       let hasAlcohol = false;
       for (let id in cart) {
         if (allProducts[id].owner === "ZOne") hasAlcohol = true;
       }
 
       if (hasAlcohol) {
-        document.getElementById('age-check').checked = false; // 每次打開都要重置
+        document.getElementById('age-check').checked = false; 
         document.getElementById('age-modal').classList.remove('hidden');
       } else {
         proceedToCheckout();
@@ -285,7 +281,7 @@
       document.getElementById('view-menu').classList.add('hidden');
       document.getElementById('view-checkout').classList.remove('hidden');
       
-      initDateTimeSelectors(); // 🔴 進入結帳頁時，啟動時間計算引擎
+      initDateTimeSelectors(); 
       
       window.scrollTo(0, 0); 
     }
@@ -313,75 +309,66 @@
     }
 
     function submitOrder() {
-     const name = document.getElementById('cust-name').value;
-     const phone = document.getElementById('cust-phone').value;
-     const address = document.getElementById('cust-address').value;
-     const orderDate = document.getElementById('order-date').value;
-     const orderTime = document.getElementById('order-time').value;
+      const name = document.getElementById('cust-name').value;
+      const phone = document.getElementById('cust-phone').value;
+      const address = document.getElementById('cust-address').value;
+      const orderDate = document.getElementById('order-date').value;
+      const orderTime = document.getElementById('order-time').value;
 
-     if (!name) return alert("請填寫姓名！");
-     if (!/^09\d{8}$/.test(phone)) return alert("電話格式錯誤！");
-     if (deliveryMode === 'delivery' && !address) return alert("請填寫外送地址！");
+      if (!name) return alert("請填寫姓名！");
+      if (!/^09\d{8}$/.test(phone)) return alert("電話格式錯誤！");
+      if (deliveryMode === 'delivery' && !address) return alert("請填寫外送地址！");
 
-     let userId = liff.isLoggedIn() ? liff.getDecodedIDToken().sub : "訪客";
+      let userId = liff.isLoggedIn() ? liff.getDecodedIDToken().sub : "訪客";
 
       const orderPayload = {
-      userId: userId,
-      name: name,
-      phone: phone,
-      deliveryMode: deliveryMode,
-      address: address || "無",
-      reserveTime: `${orderDate} ${orderTime}`,
-      cart: cart,
-      total: document.getElementById('final-price').innerText
-    };
+        userId: userId,
+        name: name,
+        phone: phone,
+        deliveryMode: deliveryMode,
+        address: address || "無",
+        reserveTime: `${orderDate} ${orderTime}`,
+        cart: cart,
+        total: document.getElementById('final-price').innerText
+      };
 
-  // 顯示 Loading
-  const loading = document.createElement('div');
-  loading.className = "fixed inset-0 bg-white/80 z-[100] flex items-center justify-center";
-  loading.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>`;
-  document.body.appendChild(loading);
+      const loading = document.createElement('div');
+      loading.className = "fixed inset-0 bg-white/80 z-[100] flex items-center justify-center";
+      loading.innerHTML = `<div class="animate-spin rounded-full h-12 w-12 border-4 border-indigo-600 border-t-transparent"></div>`;
+      document.body.appendChild(loading);
 
-  fetch(GAS_URL, {
-    method: 'POST',
-    // 移除 headers，讓瀏覽器自動處理，這是繞過某些 CORS 限制的常見做法
-    body: JSON.stringify(orderPayload) 
-  })
-  .then(res => {
-    // 這裡是最關鍵的！我們先不要急著把它當成 JSON，先拿純文字來看
-    return res.text(); 
-  })
-  .then(rawText => {
-    document.body.removeChild(loading);
-    try {
-      // 嘗試把純文字轉回 JSON
-      const result = JSON.parse(rawText); 
-      if (result.status === "success") {
-        document.getElementById('success-price').innerText = orderPayload.total;
-        document.getElementById('view-checkout').classList.add('hidden');
-        document.getElementById('view-success').classList.remove('hidden');
-        cart = {};
-        localStorage.removeItem(CACHE_KEY);
-      } else {
-        alert("失敗：" + (result.message || "錯誤原因被隱藏了"));
-      }
-    } catch (e) {
-      // 如果轉 JSON 失敗，代表大腦回傳了我們看不懂的東西 (例如 HTML 錯誤頁面)
-      // 這時候把拿到的純文字直接印出來！這就是破案關鍵！
-      alert("解析大腦回覆失敗，原始內容為：\n\n" + rawText.substring(0, 300)); 
+      fetch(GAS_URL, {
+        method: 'POST',
+        body: JSON.stringify(orderPayload) 
+      })
+      .then(res => res.text())
+      .then(rawText => {
+        document.body.removeChild(loading);
+        try {
+          const result = JSON.parse(rawText); 
+          if (result.status === "success") {
+            document.getElementById('success-price').innerText = orderPayload.total;
+            document.getElementById('view-checkout').classList.add('hidden');
+            document.getElementById('view-success').classList.remove('hidden');
+            cart = {};
+            localStorage.removeItem(CACHE_KEY);
+          } else {
+            alert("失敗：" + (result.message || "未知錯誤"));
+          }
+        } catch (e) {
+          alert("系統回傳格式異常，但訂單可能已送出，請檢查試算表。原始回覆：\n" + rawText.substring(0, 100)); 
+        }
+      })
+      .catch(err => {
+        if (document.body.contains(loading)) document.body.removeChild(loading);
+        alert("網路傳輸失敗，請稍後再試：" + err);
+      });
     }
-  })
-  .catch(err => {
-    if (document.body.contains(loading)) document.body.removeChild(loading);
-    alert("網路傳輸徹底失敗，請檢查網路連線或 GAS_URL 是否正確：" + err);
-  });
-}
     
-     function initDateTimeSelectors() {
+    function initDateTimeSelectors() {
       let maxAdvance = 0;
       let hasBBQ = false;
 
-      // 檢查購物籃內容，尋找最高限制條件
       for (let id in cart) {
         let p = allProducts[id];
         if (p && p.advanceDays > maxAdvance) maxAdvance = parseInt(p.advanceDays);
@@ -392,9 +379,8 @@
       dateSelect.innerHTML = '';
       
       const today = new Date();
-      // 動態產生接下來 5 天的日期選單
       for (let i = 0; i < 5; i++) {
-        if (i < maxAdvance) continue; // 🧨 豬肋排防呆：如果限制天數為1，i=0(今天)就會被略過
+        if (i < maxAdvance) continue; 
         
         let d = new Date(today);
         d.setDate(today.getDate() + i);
@@ -404,7 +390,6 @@
         dateSelect.innerHTML += `<option value="${d.toISOString().split('T')[0]}">${label}</option>`;
       }
 
-      // 顯示警告文案
       const warning = document.getElementById('time-warning');
       if (maxAdvance > 0) {
         warning.innerText = `⚠️ 您的訂單包含需提前 ${maxAdvance} 日預約之品項，已自動為您鎖定日期。`;
@@ -413,15 +398,13 @@
         warning.classList.add('hidden');
       }
 
-      generateTimeSlots(); // 根據選擇的日期產生時間
+      generateTimeSlots(); 
     }
 
     function generateTimeSlots() {
       const timeSelect = document.getElementById('order-time');
       timeSelect.innerHTML = '';
       
-      // 第一階段防呆：統一限制在火茂山丈的營業交集 (18:00 - 01:00)
-      // 未來可在此加入判斷「若是今天且時間已過，過濾掉過去的時間」
       const slots = ["18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "00:00", "00:30", "01:00"];
       
       slots.forEach(slot => {
