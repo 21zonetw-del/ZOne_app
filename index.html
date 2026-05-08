@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ZOne X 火茂山丈 聯合行動燒烤酒吧</title>
+  <title>ZOne X 火茂山丈 聯合餐酒車</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -70,6 +70,15 @@
       <section class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 space-y-4">
         <h3 class="font-black text-gray-800">📝 聯絡資訊</h3>
         <div>
+      <section id="spice-section" class="hidden bg-white p-5 rounded-[2rem] shadow-sm border border-orange-100">
+        <h3 class="font-black text-orange-600 mb-4">🌶️ 烤肉辣度 (全單統一)</h3>
+        <select id="spice-level" class="w-full bg-orange-50 p-4 rounded-xl border-none font-bold text-orange-800 focus:ring-2 focus:ring-orange-500">
+          <option value="不辣">不辣</option>
+          <option value="小辣">小辣</option>
+          <option value="中辣">中辣</option>
+          <option value="大辣">大辣</option>
+        </select>
+      </section>
           <label class="text-xs font-bold text-gray-400 ml-2">姓名</label>
           <input type="text" id="cust-name" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 mt-1" placeholder="怎麼稱呼您？">
         </div>
@@ -321,6 +330,10 @@
 
       let userId = liff.isLoggedIn() ? liff.getDecodedIDToken().sub : "訪客";
 
+      const spiceLevel = document.getElementById('spice-section').classList.contains('hidden') 
+                         ? "無" 
+                         : document.getElementById('spice-level').value;
+
       const orderPayload = {
         userId: userId,
         name: name,
@@ -328,6 +341,7 @@
         deliveryMode: deliveryMode,
         address: address || "無",
         reserveTime: `${orderDate} ${orderTime}`,
+        spice: spiceLevel, // 🔴 新增這行：把辣度傳給後端
         cart: cart,
         total: document.getElementById('final-price').innerText
       };
@@ -372,9 +386,16 @@
       for (let id in cart) {
         let p = allProducts[id];
         if (p && p.advanceDays > maxAdvance) maxAdvance = parseInt(p.advanceDays);
-        if (p && p.owner === "Huamao") hasBBQ = true;
+        if (p && p.owner === "Huamao") hasBBQ = true; // 偵測到有火茂山丈的產品
       }
-
+      // 🔴 控制辣度選單的顯示與隱藏
+      const spiceSection = document.getElementById('spice-section');
+      if (hasBBQ) {
+        spiceSection.classList.remove('hidden');
+      } else {
+        spiceSection.classList.add('hidden');
+      }
+      
       const dateSelect = document.getElementById('order-date');
       dateSelect.innerHTML = '';
       
@@ -407,9 +428,43 @@
       
       const slots = ["18:00", "18:30", "19:00", "19:30", "20:00", "20:30", "21:00", "21:30", "22:00", "22:30", "23:00", "23:30", "00:00", "00:30", "01:00"];
       
+      // 取得客人選擇的日期與今天的日期
+      const dateSelect = document.getElementById('order-date').value;
+      const todayStr = new Date().toISOString().split('T')[0];
+      const isToday = (dateSelect === todayStr);
+
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMin = now.getMinutes();
+
+      let availableSlotsCount = 0;
+
       slots.forEach(slot => {
+        // 如果選的是今天，進行時間過濾
+        if (isToday) {
+          let [slotH, slotM] = slot.split(':').map(Number);
+          
+          // 處理跨夜邏輯：把凌晨 00 點和 01 點當作 24 和 25 點來比較
+          let effectiveSlotH = slotH < 6 ? slotH + 24 : slotH;
+          let effectiveCurrentH = currentHour < 6 ? currentHour + 24 : currentHour;
+
+          let slotTimeInMins = effectiveSlotH * 60 + slotM;
+          let currentTimeInMins = effectiveCurrentH * 60 + currentMin;
+
+          // 防呆：只顯示「目前時間 + 30分鐘緩衝」之後的時段
+          if (slotTimeInMins <= currentTimeInMins + 30) {
+            return; // 略過這個過期的時段
+          }
+        }
+        
         timeSelect.innerHTML += `<option value="${slot}">${slot}</option>`;
+        availableSlotsCount++;
       });
+
+      // 如果今天已經太晚（例如凌晨 1 點半），所有時段都被濾掉了
+      if (availableSlotsCount === 0) {
+        timeSelect.innerHTML = `<option value="">今日已打烊，請選擇明日</option>`;
+      }
     }
     
     window.onload = init;
