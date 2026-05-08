@@ -121,7 +121,7 @@
         <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
       </div>
       <h2 class="text-2xl font-black text-white mb-2">訂單已送出</h2>
-      <p class="text-slate-400 text-sm leading-relaxed mb-8">我們已將您的需求傳達給職人。<br>請留意您的 LINE 訊息，我們確認接單後將立即通知您！</p>
+      <p class="text-slate-400 text-sm leading-relaxed mb-8">我們已將您的需求傳達給職人。<br><span class="text-indigo-400 font-bold">實際時間依現場為準</span>，請留意您的 LINE 訊息，我們確認接單後將立即通知您！</p>
       
       <div class="bg-slate-900 rounded-xl p-4 mb-8 text-left border border-slate-700">
         <p class="text-xs text-slate-500 font-bold mb-1">預估總額</p>
@@ -340,15 +340,24 @@
                          ? "無" 
                          : document.getElementById('spice-level').value;
 
-      const orderPayload = {
+      const cartDetails = {};
+      for (let id in cart) {
+      cartDetails[id] = {
+        name: allProducts[id].name,
+        qty: cart[id],
+        owner: allProducts[id].owner // 🚩 帶上品牌情報
+        };
+      }
+      
+        const orderPayload = {
         userId: userId,
         name: name,
         phone: phone,
         deliveryMode: deliveryMode,
         address: address || "無",
         reserveTime: `${orderDate} ${orderTime}`,
-        spice: spiceLevel, // 🔴 新增這行：把辣度傳給後端
-        cart: cart,
+        spice: spiceLevel,
+        cart: cartDetails, // 🚩 改傳送詳細版
         total: document.getElementById('final-price').innerText
       };
 
