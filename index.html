@@ -66,15 +66,6 @@
           <button id="btn-delivery" onclick="setDeliveryMode('delivery')" class="flex-1 py-3 rounded-xl font-bold border-2 border-gray-100 text-gray-400 transition-all">外送到府</button>
         </div>
       </section>
-      <section id="spice-section" class="hidden bg-white p-5 rounded-[2rem] shadow-sm border border-orange-100">
-        <h3 class="font-black text-orange-600 mb-4">🌶️ 烤肉辣度 (全單統一)</h3>
-        <select id="spice-level" class="w-full bg-orange-50 p-4 rounded-xl border-none font-bold text-orange-800 focus:ring-2 focus:ring-orange-500">
-          <option value="不辣">不辣</option>
-          <option value="小辣">小辣</option>
-          <option value="中辣">中辣</option>
-          <option value="大辣">大辣</option>
-        </select>
-      </section>
       <section class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100 space-y-4">
         <h3 class="font-black text-gray-800">📝 聯絡資訊</h3>
         <div>
@@ -90,7 +81,15 @@
           <input type="text" id="cust-address" class="w-full bg-slate-50 p-4 rounded-2xl border-none focus:ring-2 focus:ring-indigo-500 mt-1" placeholder="請輸入完整地址">
         </div>
       </section>
-
+      <section id="spice-section" class="hidden bg-white p-5 rounded-[2rem] shadow-sm border border-orange-100">
+        <h3 class="font-black text-orange-600 mb-4">🌶️ 烤肉辣度 (全單統一)</h3>
+        <select id="spice-level" class="w-full bg-orange-50 p-4 rounded-xl border-none font-bold text-orange-800 focus:ring-2 focus:ring-orange-500">
+          <option value="不辣">不辣</option>
+          <option value="小辣">小辣</option>
+          <option value="中辣">中辣</option>
+          <option value="大辣">大辣</option>
+        </select>
+      </section>
       <section class="bg-white p-5 rounded-[2rem] shadow-sm border border-slate-100">
         <h3 class="font-black text-gray-800 mb-4">💰 支付方式</h3>
         <div class="space-y-2">
@@ -198,9 +197,15 @@
     }
 
     function processData(data) {
-      rawMenuData = data;
-      allProducts = {};
+      // 核心邏輯：手動排列順序，讓 Huamao 在前，ZOne 在後
+      const sortedBrands = ["Huamao", "ZOne"]; 
+      rawMenuData = {};
       
+      sortedBrands.forEach(brand => {
+        if (data[brand]) rawMenuData[brand] = data[brand];
+      });
+      
+      allProducts = {};
       for(let brand in data) { 
         for(let cat in data[brand]) { 
           data[brand][cat].forEach(p => { 
@@ -212,7 +217,9 @@
       
       document.getElementById('loading').classList.add('hidden');
       document.getElementById('menu-container').classList.remove('hidden');
-      switchBrand('ZOne');
+      
+      // 預設進入時開啟第一個品牌 (火茂山丈)
+      switchBrand('Huamao'); 
     }
 
     function switchBrand(brand) {
